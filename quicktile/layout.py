@@ -208,7 +208,7 @@ def make_winsplit_positions(top_percent: int = 0.5, columns: int = 3,
                         for x in range(1, columns))
 
     center_steps = (1.0,) + cycle_steps
-    edge_steps = (0.5,) + cycle_steps
+    edge_steps = cycle_steps
 
     positions = {
         'center': [gvlay(width, 1, 'center') for width in center_steps],

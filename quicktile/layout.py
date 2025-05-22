@@ -214,9 +214,9 @@ def make_winsplit_positions(top_percent: int = 0.5, columns: int = 3,
         'center': [gvlay(width, 1, 'center') for width in center_steps],
     }
 
-    for grav in ('top'):
+    for grav in ('top',):
         positions[grav] = [gvlay(width, top_percent, grav) for width in center_steps]
-    for grav in ('bottom'):
+    for grav in ('bottom',):
         positions[grav] = [gvlay(width, 1 - top_percent, grav) for width in center_steps]
     for grav in ('left', 'right'):
         positions[grav] = [gvlay(width, 1, grav) for width in edge_steps]

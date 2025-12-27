@@ -5,7 +5,7 @@ Developer's Guide
    :local:
 
 .. todo:: Aside from the obvious factor that it exposes a lot of architectural
-   cleanup that needs to be done, something about :doc:`developing` feels
+   cleanup that needs to be done, something about ``developing.rst`` feels
    sloppy to me. I think reading some O'Reilly books to examine how they're
    written might help me to figure out what's wrong.
 
@@ -31,6 +31,9 @@ On the operating system you intend to use for development:
 
 2. Install the :ref:`runtime dependencies <Dependencies>`.
 
+3. Install Xvfb, Openbox, and Zenity (eg. ``sudo apt install xvfb openbox
+   zenity``) for the functional tests.
+
 3. Either use the following command to install QuickTile's additional
    development-time dependencies, or manually install the dependencies listed
    therein:
@@ -41,8 +44,8 @@ On the operating system you intend to use for development:
 
    These dependencies fall into one of two categories:
 
-   * Source code verification (Flake8_ for static analysis and code style,
-     MyPy_ for checking type hints, Nose_ for test discovery, and
+   * Source code verification (Ruff_ for static analysis and code style,
+     MyPy_ for checking type hints, PyTest_ for test discovery, and
      `Coverage.py`_ for determining test coverage)
    * Documentation generation (Sphinx_, `sphinx-autodoc-typehints`_, and
      `sphinxcontrib-autoprogram`_)
@@ -78,11 +81,17 @@ To enable inclusion of these development notes...
 3. Your developer documentation should now exist in :file:`docs/_build/html/`.
 
 The resulting API documentation will include in-line TODO annotations, as well
-as a complete listing at the bottom of the doc:`apidocs/index` page.
+as a complete listing at the bottom of the :doc:`apidocs/index` page.
 
 .. note:: If Sphinx fails to notice that part of the documentation should be
    rebuilt, a rebuild can be forced either by deleting the :file:`_build/html`
    directory or by running ``(cd docs; make html SPHINXOPTS=-E)`` instead.
+
+   Generated documentation, such :doc:`cli` may also require deleting other
+   files under ``_build`` but it is advised to delete individual files such as
+   ``_build/doctrees/cli.doctree`` instead of the entire ``_build`` folder
+   to avoid re-downloading the InterSphinx indexes, which could
+   get you temporarily rate-limited.
 
 There also exist TODO comments in the source code (usually ones that shouldn't
 be seen as drawing attention away from the ones in the Sphinx docs) which can
@@ -90,9 +99,7 @@ be searched for by running the following command in the project root:
 
 .. code-block:: sh
 
-    grep -E 'XXX|TODO|FIXME' -nR *.py quicktile functional_harness
-
-PyLint_ should also report these.
+    grep -E 'XXX|TODO|FIXME' -nR *.py quicktile tests
 
 Regenerating Documentation Graphics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -146,10 +153,8 @@ as X11 window properties using the
 Quirks of the Codebase's Structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The :mod:`quicktile.__main__` module is currently responsible for parsing
-  configuration files and command-line arguments, migrating old configuration
-  versions, initializing other components, and stitching them together. It is
-  slated to be broken up into smaller, more task-specific modules.
+* The :mod:`quicktile.__main__.main` function is currently responsible for
+  gluing everything together.
 
 * At the moment, due to an incomplete refactoring during the GTK+ 3 port, the
   :mod:`quicktile.keybinder` module is still structured as if optional, though
@@ -175,10 +180,6 @@ Quirks of the Codebase's Structure
   commands and the shared setup code for them (lumped into a single class) as
   well as all of the commands themselves.
 
-* The :mod:`quicktile.version` module exists only to allow :file:`setup.py` and
-  the rest of QuickTile to share a single definition of the version number
-  without :file:`setup.py` having to import actual QuickTile code.
-
 .. todo:: Figure out a way to get URLs working in Sphinx's Graphviz_ extension
    that doesn't break when the default CSS downscales the diagram to keep it
    fitting in the document and then diagram QuickTile's functional
@@ -203,8 +204,8 @@ revise them:
 * All function arguments should bear complete type annotations which pass
   MyPy's scrutiny and use of :any:`typing.Any` or ``# type: ignore`` must be
   approved on a case-by-case basis.
-* All Flake8_ and PyLint_ complaints must either be resolved or whitelisted.
-  New ``NOQA`` or ``pylint: disable=`` annotations must include comments
+* All Ruff_ complaints must either be resolved or whitelisted.
+  New whitelisting annotations must include comments
   justifying their presence, except in self-evident cases such as URLs in
   docstrings which exceed the line-length limit.
 * All code within the ``quicktile`` package must have complete API
@@ -217,10 +218,10 @@ revise them:
   not be feasible until further refactoring and test harness work is
   completed.)
 
-Once your changes are ready, the recommended way to submit them is via
-`pull request`_, as this will automatically submit them to the various
-continuous testing services that run on the QuickTile repository, as well
-as making it as simple as possible for me to examine and accept them.
+Once your changes are ready, the standard way to submit them is via `pull
+request`_ against the ``master`` branch, as this will automatically trigger
+a test run, as well as making it as simple as possible for me to examine and
+accept them.
 
 .. _testing-quicktile:
 
@@ -230,7 +231,9 @@ Testing Your Changes
 Testing Environment Concerns
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-QuickTile's current minimum compatibility target is Kubuntu Linux 20.04 LTS.
+As of this writing, QuickTile's current minimum compatibility target is Kubuntu
+Linux 24.04 LTS. This may be broadened as the testing infrastructure is
+modernized.
 
 If this is not what you are running, I suggest using VirtualBox_ for
 compatibility testing, as it is easy to set up and has support for virtual
@@ -245,10 +248,9 @@ machines with multiple monitors.
 
     Those using only VirtualBox packages provided by their Linux distribution's
     official package repositories should have no need to worry, but its absence
-    can be confirmed by choosing :menuselection:`File --> Preferences...` from
-    the VirtualBox menu bar, selecting the :guilabel:`Extensions` section in
-    the resulting dialog, and verifying that no extensions other than
-    :guilabel:`VNC` are present.
+    can be confirmed by choosing :menuselection:`File --> Tools --> Extension
+    Pack Manager` from the VirtualBox menu bar, and verifying that no
+    extensions other than :guilabel:`VNC` are present.
 
     Should this prove too concerning, KVM-based solutions such as virt-manager_
     or `GNOME Boxes`_ should also serve equally well though I can give no
@@ -272,59 +274,60 @@ For best results, configure your virtual desktop with the following characterist
    best chance of triggering any dead-space-related bugs in the code for
    calculating usable regions.
 
+.. note:: The following two behaviours are currently known bugs where a proper
+   solution is blocked on reworking how window state is tracked and you don't
+   need to worry that you've caused them:
+
+   1. If a window is so far down or to the right that it would be outside the
+      bounds of the destination monitor, QuickTile will refuse to honor a request to move it to that monitor to avoid the risk of your window manager allowing it to get lost off the edge of the desktop. This can block commands like ``monitor-switch``.
+   2. If a window's top-left corner is within the bounds of the destination
+      montiro, but its bottom-right corner extends beyond it, the window will
+      be resized to fit, but it won't remember its old size if it's moved back
+      to its original monitor.
+
 Automated Testing
 ^^^^^^^^^^^^^^^^^
 
-To run a complete set of everything that can be completed quickly, please use
+To run a complete set of all tests, please use
 the following command from the root of the project:
 
 .. code-block:: sh
 
     ./run_tests.sh
 
-It will perform the majority of the tests which will be run by Travis-CI when
-you open a pull request, while still completing in under 5 seconds with a hot
-cache on an old 2-core Althon with no SSD.
-
 The following will be run:
 
 * MyPy_ to check for violations of the type annotations.
-* Flake8_ for basic static analysis and code style checking
-* Nose_ and doctest_ to run the unit tests (currently of limited scope)
+* Ruff_ for basic static analysis and code style checking
+* PyTest_ and doctest_ to run the unit tests (currently of limited scope)
 * doctest_ to check for broken code examples in the API documentation
 * Sphinx_'s ``make coverage`` to check documentation coverage
   (currently of questionable reliability)
 
-While the dependency on system packages such as PyGObject limits its utility,
-you may also use tox_ to test that QuickTile's ``setup.py`` packaging process
-works properly. (However, bear in mind that you will need to edit ``tox.ini``
-if your system Python is not version 3.8 as found on Kubuntu Linux 20.04 LTS.)
-
-Bear in mind that, while not yet incorporated into convenient scripts, the
-following tests will also be run by the ALE_ analysis plugin for my text editor
-when I examine your contribution:
-
-* Bandit_ (You can run this as ``bandit quicktile`` after installation.)
-* PyLint_ (Assuming you have your system configured to complain about
-  deprecation warnings as I do, I suggest running PyLint as
-  ``pylint3 --rcfile=pylintrc quicktile 2>/dev/null``)
-
-While it currently relies on an ugly hack which hard-codes Openbox and
-Zenity as dependencies, and does not yet assert that windows wind up
-in the expected states, you may also find the beginnings of a functional
-test suite useful as a way to exercise the code and check for uncaught
-exceptions:
-
-.. code-block:: sh
-
-    ./test_functional.py -v
-
-Bear in mind that, even once it is more mature, it will remain excluded
-from :file:`run_tests.sh` because it takes too long to be part of a
-comfortable edit-test cycle.
-
 In lieu of a proper functional test suite, please manually execute all tiling
 commands which rely on code you've touched and watch for misbehaviour.
+
+Semi-Automated Testing
+^^^^^^^^^^^^^^^^^^^^^^
+
+While QuickTile does not yet have a proper functional test suite, the
+``test_functional.sh`` script can be used to quickly perform human testing of
+most of the commands for both the CLI and D-Bus interfaces.
+
+1. Open a free-floating terminal window which is not set to be always on top or
+   on all desktops.
+2. Run ``./test_functional.sh``
+3. Follow the instructions
+
+The script will temporarily make the terminal window always-on-top and
+on-all-desktops, open a test window (FeatherPad by default), and then walk it
+through a predefined sequence of QuickTile commands, with a one-second delay
+between each.
+
+The intended way to use it is to keep your eyes focused on the "Testing
+[command name]..." messages in the terminal, while you confirm that the
+movement you're seeing in your peripheral vision matches what it's claiming to
+do.
 
 Adding Yourself to the :file:`AUTHORS` List
 -------------------------------------------
@@ -376,12 +379,52 @@ A Bad Example::
 
 .. highlight:: default
 
+How to Make A New Release
+-------------------------
+
+While contributors don't need to know this, both for maintainer reference and
+in case QuickTile ever needs to be forked, this is the checklist for making
+a new release:
+
+1. Prepare the corresponding commit
+
+   1. Verify that :file:`AUTHORS` and :file:`ChangeLog` are up to date and
+      remove ``(git HEAD)`` from the newest :file:`ChangeLog` entry's title.
+   2. Make sure that all changes have been committed.
+   3. Run :command:`(cd docs; make html)` and :command:`./run_tests.sh` locally
+      and confirm that nothing looks wrong.
+   4. Run :command:`./test_functional.sh`
+   5. Manually test the internal keybinder using
+      :command:`./quicktile.sh --daemonize`.
+   6. Push any remaining changes to GitHub.
+   7. If they pass CI testing, merge them into ``master``.
+   8. Wait for the CI tests and site update to pass on ``master``.
+
+2. Make the release
+
+   1. Copy the commit hash which was merged into ``master`` and passed CI from
+      GitHub to ensure that you're getting the exact one you intend.
+   2. Run :command:`git tag vXXX <commit-hash>` to mint the release, where
+      ``XXX`` is the string from :file:`quicktile/VERSION` and
+      ``<commit-hash>`` is the commit hash from GitHub. (At present, QuickTile
+      does not use annotated commits)
+   3. Run :command:`git push --tags` to push the release live.
+
+3. Bump the development version
+
+   1. Bump :file:`quicktile/VERSION`
+   2. Add a new blank entry to :file:`ChangeLog` with ``(git HEAD)`` before the
+      terminal colon.
+
+.. todo:: Automate this more so it's harder to overlook steps or do them out of
+          order and add linting for CI.
+
 .. _AdvanceCOMP: https://www.advancemame.it/comp-readme
 .. _ALE: https://github.com/dense-analysis/ale/
 .. _Bandit: https://github.com/PyCQA/bandit
 .. _Coverage.py: https://coverage.readthedocs.io/
 .. _doctest: https://docs.python.org/3/library/doctest.html
-.. _Flake8: https://pypi.org/project/flake8/
+.. _Ruff: https://docs.astral.sh/ruff/
 .. _Gifsicle: https://www.lcdf.org/gifsicle/
 .. _GNU Make: https://www.gnu.org/software/make/
 .. _Graphviz: https://www.graphviz.org/
@@ -389,9 +432,8 @@ A Bad Example::
 .. _Inkscape: https://inkscape.org/
 .. _issue tracker: https://github.com/ssokolow/quicktile/issues
 .. _MyPy: http://mypy-lang.org/
-.. _Nose: https://nose.readthedocs.io/
+.. _PyTest: https://docs.pytest.org/
 .. _OptiPNG: http://optipng.sourceforge.net/
-.. _PyLint: https://www.pylint.org/
 .. _pull request: https://github.com/ssokolow/quicktile/pulls
 .. _simple past tense: https://en.wikipedia.org/wiki/Simple_past
 .. _Sphinx: https://www.sphinx-doc.org/

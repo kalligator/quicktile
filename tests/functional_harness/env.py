@@ -10,13 +10,13 @@ from contextlib import contextmanager
 # pylint: disable=unsubscriptable-object
 
 # -- Type-Annotation Imports --
-from typing import Any, Dict, Generator, Union # NOQA
+from typing import Any, Dict, Generator, Mapping, Union  # NOQA
 
 
 @contextmanager
-def background_proc(argv, env: Dict[str, Union[bytes, str]], verbose=False,
+def background_proc(argv, verbose=False,
                     *args: Any, **kwargs: Any
-                    ) -> Generator[None, None, None]:
+                    ) -> Generator[subprocess.Popen[Any], None, None]:
     """Context manager for scoping the lifetime of a ``subprocess.Popen`` call
 
     :param argv: The command to be executed
@@ -26,12 +26,11 @@ def background_proc(argv, env: Dict[str, Union[bytes, str]], verbose=False,
     :param kwargs: Keyword arguments to pass to :class:`subprocess.Popen`
     """
     if verbose:
-        popen_obj = subprocess.Popen(  # type: ignore # nosec
-            argv, env=env, *args, **kwargs)
+        popen_obj = subprocess.Popen(argv, *args, **kwargs)
     else:
-        popen_obj = subprocess.Popen(argv,  # type: ignore # nosec
+        popen_obj = subprocess.Popen(argv,  # type: ignore
             stderr=subprocess.STDOUT, stdout=subprocess.DEVNULL,
-            env=env, *args, **kwargs)
+            *args, **kwargs)
     try:
         yield popen_obj
     finally:

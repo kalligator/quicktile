@@ -1,44 +1,7 @@
 QuickTile
 =========
 
-.. image:: https://scrutinizer-ci.com/g/ssokolow/quicktile/badges/quality-score.png?b=master
-   :target: https://scrutinizer-ci.com/g/ssokolow/quicktile/?branch=master
-   :alt: Scrutinizer Code Quality
-
-.. image:: https://codeclimate.com/github/ssokolow/quicktile/badges/gpa.svg
-   :target: https://codeclimate.com/github/ssokolow/quicktile
-   :alt: Code Climate
-
-.. image:: https://travis-ci.org/ssokolow/quicktile.svg?branch=master
-   :target: https://travis-ci.org/ssokolow/quicktile
-   :alt: Travis-CI
-
-.. image:: https://coveralls.io/repos/github/ssokolow/quicktile/badge.svg?branch=master
-   :target: https://coveralls.io/github/ssokolow/quicktile?branch=master
-   :alt: Coveralls
-
-.. image:: https://img.shields.io/badge/License-GPLv2%2B-blue
-   :target: https://www.gnu.org/licenses/gpl-2.0.html
-   :alt: License: GPLv2+
-
 Keyboard-driven Window Tiling for your existing X11 window manager
-
-Important Message For Users of GTK+ 2.x QuickTile
--------------------------------------------------
-
-In addition to migrating from GTK+ 2.x to GTK 3, QuickTile 0.4.0 makes the
-following changes:
-
-* The PyGTK to PyGI migration has changed the list of dependencies
-  significantly.
-* Regressions in certain GDK APIs have made python-xlib a mandatory dependency.
-* The ``middle`` command has been renamed to ``center`` for consistency with
-  ``move-to-center``. You will have to update anything which calls ``middle``
-  via the command-line or D-Bus APIs, but ``quicktile.cfg`` will update
-  automatically.
-* Please contact me if you maintain your own QuickTile patches.
-  I have begun a major refactoring and want to make sure your changes
-  get updated accordingly.
 
 Requirements:
 -------------
@@ -65,13 +28,12 @@ Installation
 QuickTile can be run from the source folder without installation via the
 ``./quicktile.sh`` script.
 
-For system-wide installation, the recommended option is ``pip3``, which will
+For system-wide installation, the current option is ``pip3``, which will
 record a log to allow easy uninstallation.
 
 ``sudo -H pip3 install https://github.com/ssokolow/quicktile/archive/master.zip``
 
-QuickTile's dependence on PyGObject prevents a fully PyPI-based installation
-option.
+Now that PyGObject is available on PyPI, other options are being explored.
 
 Consult the `Installation <http://ssokolow.com/quicktile/installation.html>`_
 section of the manual for full details and alternative installation options.
@@ -129,17 +91,22 @@ manual for alternative ways to interact with QuickTile.
 Removal
 -------
 
-If you used the installation instructions listed above, a system-wide
-installation of QuickTile can be removed with the following commands:
+If you installed QuickTile system-wide using `pip3`, it can be removed
+with the following commands:
 
 .. code:: sh
 
-    sudo pip3 uninstall quicktile
+    sudo pip3 uninstall --break-system-packages quicktile
     sudo rm /usr/local/bin/quicktile
 
+Without ``--break-system-packages``, it will refuse to remove things installed
+outside a virtualenv (including things it installed) because it **may** remove
+things the system package manager is managing.
+
 See the `Removal <http://ssokolow.com/quicktile/installation.html#removal>`_
-section of the manual for instructions on clearing out files left behind by
-other installation methods.
+section of the manual for more details on what a safe use of
+``--break-system-packages`` looks like and instructions on clearing out files
+left behind by other installation methods
 
 Contributing
 ------------
